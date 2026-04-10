@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WebAgency Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f8f7f4;
+    --surface: #ffffff;
+    --surface2: #f2f0ec;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.14);
+    --text: #1a1916;
+    --text2: #6b6860;
+    --text3: #9e9c98;
+    --accent: #1D9E75;
+    --accent-light: #e1f5ee;
+    --accent-dark: #0f6e56;
+    --amber: #854f0b;
+    --amber-light: #faeeda;
+    --blue: #185fa5;
+    --blue-light: #e6f1fb;
+    --red: #993556;
+    --red-light: #fbeaf0;
+    --green-light: #eaf3de;
+    --green: #3b6d11;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  a { color: var(--accent); }
+
+  /* LAYOUT */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar { width: 220px; background: var(--surface); border-right: 1px solid var(--border); padding: 24px 0; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+  .sidebar-logo { padding: 0 20px 24px; font-size: 17px; font-weight: 600; letter-spacing: -0.4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .sidebar-logo span { color: var(--accent); }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px; font-size: 13.5px; color: var(--text2); cursor: pointer; border-radius: 0; transition: all 0.15s; border-left: 2px solid transparent; }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { color: var(--accent); background: var(--accent-light); border-left: 2px solid var(--accent); font-weight: 500; }
+  .nav-icon { width: 16px; height: 16px; opacity: 0.7; flex-shrink: 0; }
+  .nav-item.active .nav-icon { opacity: 1; }
+  .sidebar-section { padding: 0 20px; font-size: 10px; font-weight: 600; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin: 16px 0 6px; }
+  .sidebar-footer { margin-top: auto; padding: 16px 20px; font-size: 11px; color: var(--text3); border-top: 1px solid var(--border); }
+
+  .main { margin-left: 220px; padding: 32px; flex: 1; max-width: calc(100vw - 220px); }
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+  .page-title { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; }
+  .page-sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .status-pill { font-size: 11px; padding: 5px 12px; border-radius: 99px; background: var(--accent-light); color: var(--accent-dark); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); display: inline-block; }
+
+  /* PANELS */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* CARDS */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .card + .card { margin-top: 14px; }
+  .card-title { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px; }
+
+  /* METRICS */
+  .metrics { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 24px; }
+  .metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+  .metric-label { font-size: 11px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+  .metric-val { font-size: 26px; font-weight: 600; letter-spacing: -1px; color: var(--text); }
+  .metric-sub { font-size: 11px; color: var(--accent); margin-top: 3px; }
+
+  /* PIPELINE */
+  .pipeline { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px; overflow-x: auto; }
+  .p-col { min-width: 0; }
+  .p-header { font-size: 11px; font-weight: 600; color: var(--text2); background: var(--surface2); border-radius: var(--radius-sm); padding: 8px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .p-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 6px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+  .p-card:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(29,158,117,0.1); }
+  .p-card-name { font-size: 13px; font-weight: 500; }
+  .p-card-meta { font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .p-card-badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 99px; margin-top: 6px; font-weight: 500; }
+
+  /* BADGES */
+  .badge { display: inline-block; font-size: 11px; padding: 3px 9px; border-radius: 99px; font-weight: 500; white-space: nowrap; }
+  .b-new { background: var(--blue-light); color: var(--blue); }
+  .b-qualified { background: var(--amber-light); color: var(--amber); }
+  .b-building { background: var(--accent-light); color: var(--accent-dark); }
+  .b-review { background: var(--amber-light); color: var(--amber); }
+  .b-completed { background: var(--green-light); color: var(--green); }
+  .b-paid { background: var(--green-light); color: var(--green); }
+  .b-unpaid { background: var(--red-light); color: var(--red); }
+
+  /* FORMS */
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 5px; display: block; }
+  input[type=text], input[type=email], textarea, select {
+    width: 100%; font-size: 13px; padding: 9px 12px;
+    border: 1px solid var(--border2); border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--text);
+    font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.15s;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(29,158,117,0.1); }
+  textarea { resize: vertical; }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 9px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface); color: var(--text); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+  .btn:hover { background: var(--surface2); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+  .btn-sm { font-size: 11px; padding: 5px 10px; }
+
+  /* GRIDS */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+  /* AI OUTPUT */
+  .ai-output { background: var(--surface2); border-radius: var(--radius-sm); padding: 16px; font-size: 13px; line-height: 1.75; color: var(--text); min-height: 60px; white-space: pre-wrap; font-family: 'DM Mono', monospace; border: 1px solid var(--border); }
+  .ai-hint { font-size: 11px; color: var(--text3); margin-top: 8px; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .loading { animation: pulse 1s infinite; }
+
+  /* TRACKER */
+  .tracker-row { border-bottom: 1px solid var(--border); padding: 14px 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .tracker-row:last-child { border-bottom: none; }
+  .progress-bar { height: 3px; background: var(--surface2); border-radius: 99px; flex: 1; min-width: 80px; }
+  .progress-fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width 0.4s; }
+
+  /* REVENUE */
+  .rev-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .rev-row:last-child { border-bottom: none; }
+  .rev-total { font-weight: 600; font-size: 15px; }
+
+  /* SETUP STEPS */
+  .setup-steps { display: flex; flex-direction: column; gap: 10px; }
+  .step-card { display: flex; gap: 14px; align-items: flex-start; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; }
+  .step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .step-num.done { background: var(--green-light); color: var(--green); }
+  .step-title { font-size: 14px; font-weight: 500; margin-bottom: 3px; }
+  .step-desc { font-size: 12px; color: var(--text2); line-height: 1.6; }
+  .step-link { font-size: 12px; color: var(--accent); margin-top: 4px; display: inline-block; text-decoration: none; }
+  .step-link:hover { text-decoration: underline; }
+  .step-tag { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 99px; background: var(--surface2); color: var(--text3); margin-top: 4px; font-weight: 500; border: 1px solid var(--border); }
+  .step-tag.free { background: var(--green-light); color: var(--green); border-color: transparent; }
+  .step-tag.five-min { background: var(--blue-light); color: var(--blue); border-color: transparent; }
+
+  /* DIVIDER */
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 999; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: var(--radius); padding: 24px; width: 460px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
+  .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+  .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .sidebar { width: 180px; }
+    .main { margin-left: 180px; padding: 20px; max-width: calc(100vw - 180px); }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .pipeline { grid-template-columns: repeat(3, minmax(140px, 1fr)); }
+    .grid2 { grid-template-columns: 1fr; }
+    .grid3 { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 640px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; max-width: 100vw; padding: 16px; }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .pipeline { grid-template-columns: repeat(2, minmax(130px, 1fr)); }
+    .grid3 { grid-template-columns: 1fr; }
+  }
+
+  /* NOTICE */
+  .notice { background: var(--amber-light); border: 1px solid rgba(133,79,11,0.2); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 12px; color: var(--amber); margin-bottom: 16px; line-height: 1.6; }
+  .notice strong { font-weight: 600; }
+
+  code { font-family: 'DM Mono', monospace; background: var(--surface2); padding: 2px 6px; border-radius: 4px; font-size: 12px; border: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">Web<span>Agency</span></div>
+    <div class="sidebar-section">Overview</div>
+    <div class="nav-item active" onclick="showPanel('pipeline',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="4" height="14" rx="1"/><rect x="6" y="1" width="4" height="10" rx="1"/><rect x="11" y="1" width="4" height="6" rx="1"/></svg>
+      Pipeline
+    </div>
+    <div class="nav-item" onclick="showPanel('tracker',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4v4l3 2"/></svg>
+      Client tracker
+    </div>
+    <div class="nav-item" onclick="showPanel('revenue',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 11l4-4 3 3 4-5 3 2"/></svg>
+      Revenue
+    </div>
+    <div class="sidebar-section">Tools</div>
+    <div class="nav-item" onclick="showPanel('leads',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="5" r="3"/><path d="M1 14c0-3 2-5 5-5"/><circle cx="12" cy="11" r="3"/><path d="M12 8v3l2 1"/></svg>
+      Find leads
+    </div>
+    <div class="nav-item" onclick="showPanel('outreach',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12v8a1 1 0 01-1 1H3a1 1 0 01-1-1V4z"/><path d="M2 4l6 5 6-5"/></svg>
+      Outreach emails
+    </div>
+    <div class="nav-item" onclick="showPanel('copy',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1h8v14H4z"/><path d="M7 5h4M7 8h4M7 11h2"/></svg>
+      Generate copy
+    </div>
+    <div class="nav-item" onclick="showPanel('invoice',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="1" width="12" height="14" rx="1"/><path d="M5 6h6M5 9h6M5 12h3"/></svg>
+      Invoice email
+    </div>
+    <div class="sidebar-section">Setup</div>
+    <div class="nav-item" onclick="showPanel('setup',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.5 1.5M11.5 11.5L13 13M3 13l1.5-1.5M11.5 4.5L13 3"/></svg>
+      Setup guide
+    </div>
+    <div class="sidebar-footer">
+      <div id="sidebar-clock" style="font-size:12px;color:var(--text3);"></div>
+      <div style="margin-top:2px;">£0 to run</div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- PIPELINE -->
+    <div id="panel-pipeline" class="panel active">
+      <div class="topbar">
+        <div>
+          <div class="page-title">Pipeline</div>
+          <div class="page-sub">Click any card to advance it to the next stage</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="status-pill"><span class="status-dot"></span> System active</div>
+          <button class="btn btn-primary btn-sm" onclick="openAddLead()">+ Add lead</button>
+        </div>
+      </div>
+      <div class="metrics" id="metrics-bar"></div>
+      <div class="card">
+        <div class="card-title">Client pipeline</div>
+        <div class="pipeline" id="pipeline-board"></div>
+      </div>
+    </div>
+
+    <!-- TRACKER -->
+    <div id="panel-tracker" class="panel">
+      <div class="topbar">
+        <div><div class="page-title">Client tracker</div><div class="page-sub">All clients and their progress</div></div>
+        <button class="btn btn-primary btn-sm" onclick="openAddLead()">+ Add client</button>
+      </div>
+      <div class="card" id="tracker-content"></div>
+    </div>
+
+    <!-- REVENUE -->
+    <div id="panel-revenue" class="panel">
+      <div class="topbar"><div><div class="page-title">Revenue</div><div class="page-sub">Track what you've earned and what's pending</div></div></div>
+      <div class="card" id="revenue-content"></div>
+    </div>
+
+    <!-- FIND LEADS -->
+    <div id="panel-leads" class="panel">
+      <div class="topbar"><div><div class="page-title">Find leads</div><div class="page-sub">Search Google Maps with one click, capture leads instantly, auto-draft their outreach email</div></div></div>
+
+      <!-- STEP 1: SET NICHE + CITY -->
+      <div class="card">
+        <div class="card-title">Step 1 — set your niche &amp; city</div>
+        <div class="grid2">
+          <div class="form-group">
+            <label class="form-label">Business type / niche</label>
+            <input type="text" id="leads-niche" placeholder="e.g. plumber, nail salon, personal trainer" oninput="updateMapButtons()" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">City or region</label>
+            <input type="text" id="leads-city" placeholder="e.g. Newcastle, Leeds, Bristol" oninput="updateMapButtons()" />
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="findLeads()">Generate search tips</button>
+          <button class="btn" onclick="generateMapSearches()">Generate search strings</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: ONE-CLICK MAP SEARCHES -->
+      <div class="card">
+        <div class="card-title">Step 2 — open Google Maps searches with one click</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:12px;">Each button opens a targeted Google Maps search in a new tab. Look for businesses with no website link on their listing.</div>
+        <div id="map-buttons" style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div style="font-size:12px;color:var(--text3);font-style:italic;">Enter a niche and city above to generate search buttons.</div>
+        </div>
+        <div style="margin-top:12px;padding:10px 12px;background:var(--surface2);border-radius:var(--radius-sm);font-size:12px;color:var(--text2);line-height:1.7;">
+          <strong style="color:var(--text);">What to look for on each listing:</strong><br/>
+          No website link shown · Copyright older than 2020 · Site broken on mobile · No contact form · Stock photos only
+        </div>
+      </div>
+
+      <!-- STEP 3: QUICK CAPTURE -->
+      <div class="card">
+        <div class="card-title">Step 3 — capture a lead instantly</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:12px;">When you spot a qualifying business on Maps, fill this in (10 seconds) — it adds them to your pipeline AND auto-drafts their cold email.</div>
+        <div class="grid2">
+          <div class="form-group"><label class="form-label">Business name</label><input type="text" id="cap-name" placeholder="e.g. Dave's Plumbing" /></div>
+          <div class="form-group"><label class="form-label">Business type</label><input type="text" id="cap-type" placeholder="e.g. plumber" /></div>
+          <div class="form-group"><label class="form-label">City</label><input type="text" id="cap-city" placeholder="e.g. Newcastle" /></div>
+          <div class="form-group"><label class="form-label">Their email (if found)</label><input type="email" id="cap-email" placeholder="e.g. dave@davesplumbing.co.uk" /></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Website issue spotted</label>
+          <select id="cap-issue">
+            <option value="no website">No website — not listed on Google Maps</option>
+            <option value="outdated website">Outdated website — looks old or broken</option>
+            <option value="not mobile-friendly">Not mobile-friendly — broken on phone</option>
+            <option value="no contact form">No contact form or online booking</option>
+            <option value="very slow website">Very slow website</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="captureAndDraft()">Add to pipeline + draft email</button>
+          <button class="btn" onclick="captureOnly()">Add to pipeline only</button>
+        </div>
+      </div>
+
+      <!-- DRAFTED EMAIL OUTPUT -->
+      <div id="cap-email-output" style="display:none;" class="card">
+        <div class="card-title">Auto-drafted cold email — copy and send from Gmail</div>
+        <div class="ai-output loading" id="cap-email-result">Writing your email...</div>
+        <div id="cap-email-actions" style="display:none;margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="copyEmail()">Copy email</button>
+          <button class="btn btn-sm" id="open-gmail-btn">Open Gmail</button>
+        </div>
+        <div class="ai-hint">Paste this into Gmail → add their email address → send. Takes 30 seconds per lead.</div>
+      </div>
+
+      <!-- LEADS CAPTURED TODAY -->
+      <div class="card">
+        <div class="card-title">Leads captured today — <span id="today-count">0</span></div>
+        <div id="today-leads-list" style="font-size:13px;color:var(--text3);font-style:italic;">No leads captured yet today. Start searching above.</div>
+      </div>
+
+      <!-- AI SEARCH PLAN (collapsible) -->
+      <div id="leads-output" style="display:none;" class="card">
+        <div class="card-title">AI search tips</div>
+        <div class="ai-output" id="leads-result"></div>
+        <div class="ai-hint">Use these tips alongside the one-click buttons above.</div>
+      </div>
+    </div>
+
+    <!-- OUTREACH -->
+    <div id="panel-outreach" class="panel">
+      <div class="topbar"><div><div class="page-title">Outreach emails</div><div class="page-sub">AI-written cold email sequence — ready to copy and send from Gmail</div></div></div>
+      <div class="card">
+        <div class="card-title">Business details</div>
+        <div class="grid2">
+          <div class="form-group"><label class="form-label">Business name</label><input type="text" id="out-biz" placeholder="e.g. Dave's Plumbing" /></div>
+          <div class="form-group"><label class="form-label">Business type</label><input type="text" id="out-type" placeholder="e.g. plumber, nail salon" /></div>
+          <div class="form-group"><label class="form-label">City</label><input type="text" id="out-city" placeholder="e.g. Birmingham" /></div>
+          <div class="form-group"><label class="form-label">Your price (£)</label><input type="text" id="out-price" placeholder="299" /></div>
+        </div>
+        <div class="form-group"><label class="form-label">Website issue noticed (optional)</label><input type="text" id="out-issue" placeholder="e.g. no website, outdated, not mobile-friendly..." /></div>
+        <button class="btn btn-primary" onclick="generateOutreach()">Generate 3-email sequence</button>
+      </div>
+      <div id="outreach-output" style="display:none;">
+        <div class="card"><div class="card-title">Email 1 — cold outreach</div><div class="ai-output loading" id="email1-out">Writing...</div></div>
+        <div class="card"><div class="card-title">Email 2 — follow-up (day 3)</div><div class="ai-output loading" id="email2-out">Writing...</div></div>
+        <div class="card"><div class="card-title">Email 3 — final follow-up (day 7)</div><div class="ai-output loading" id="email3-out">Writing...</div></div>
+        <div class="card">
+          <div class="card-title">Onboarding form — send this as a Google Form when they reply</div>
+          <div id="form-questions" style="font-size:13px;line-height:2;color:var(--text2);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COPY GENERATOR -->
+    <div id="panel-copy" class="panel">
+      <div class="topbar"><div><div class="page-title">Generate website copy</div><div class="page-sub">Paste in client answers — get full homepage copy in seconds</div></div></div>
+      <div class="card">
+        <div class="card-title">Client info (from their onboarding form)</div>
+        <div class="grid2">
+          <div class="form-group"><label class="form-label">Business name</label><input type="text" id="copy-biz" placeholder="e.g. Smith & Sons Plumbing" /></div>
+          <div class="form-group"><label class="form-label">Business type & location</label><input type="text" id="copy-type" placeholder="e.g. emergency plumber, Bristol" /></div>
+        </div>
+        <div class="form-group"><label class="form-label">Services offered</label><textarea id="copy-services" rows="2" placeholder="e.g. boiler repair, leak fixing, bathroom fitting, 24hr callout..."></textarea></div>
+        <div class="grid2">
+          <div class="form-group"><label class="form-label">Brand tone</label>
+            <select id="copy-tone">
+              <option>Professional & trustworthy</option>
+              <option>Friendly & approachable</option>
+              <option>Urgent & direct</option>
+              <option>Luxury & premium</option>
+              <option>Fun & playful</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Target customer</label><input type="text" id="copy-audience" placeholder="e.g. homeowners in Bristol" /></div>
+        </div>
+        <div class="form-group"><label class="form-label">USPs / anything special</label><textarea id="copy-usp" rows="2" placeholder="e.g. family run 20 years, same-day, fully insured, DBS checked..."></textarea></div>
+        <button class="btn btn-primary" onclick="generateCopy()">Generate full homepage copy</button>
+      </div>
+      <div id="copy-output" style="display:none;" class="card">
+        <div class="card-title">Homepage copy — paste into Carrd or Framer</div>
+        <div class="ai-output loading" id="copy-result">Generating your website copy...</div>
+        <div class="ai-hint">Copy → open <a href="https://carrd.co" target="_blank">carrd.co</a> or <a href="https://framer.com" target="_blank">framer.com</a> → pick a template → paste. Takes ~90 mins per site.</div>
+      </div>
+    </div>
+
+    <!-- INVOICE EMAIL -->
+    <div id="panel-invoice" class="panel">
+      <div class="topbar"><div><div class="page-title">Invoice email</div><div class="page-sub">Generate a payment request — send with your Stripe link</div></div></div>
+      <div class="card">
+        <div class="card-title">Invoice details</div>
+        <div class="grid3">
+          <div class="form-group"><label class="form-label">Client name</label><input type="text" id="inv-name" placeholder="e.g. Dave Smith" /></div>
+          <div class="form-group"><label class="form-label">Amount (£)</label><input type="text" id="inv-amount" placeholder="299" /></div>
+          <div class="form-group"><label class="form-label">Milestone</label>
+            <select id="inv-milestone"><option>Full payment on completion</option><option>50% deposit upfront</option><option>Final 50% payment</option><option>Monthly retainer</option></select>
+          </div>
+        </div>
+        <div class="form-group"><label class="form-label">Work completed</label><input type="text" id="inv-work" placeholder="e.g. 5-page website, mobile responsive, SEO optimised" /></div>
+        <button class="btn btn-primary" onclick="generateInvoice()">Generate invoice email</button>
+      </div>
+      <div id="invoice-output" style="display:none;" class="card">
+        <div class="card-title">Invoice email — copy and send from Gmail with Stripe link</div>
+        <div class="ai-output loading" id="invoice-result">Writing your invoice email...</div>
+        <div class="ai-hint">Create your free Stripe payment link at <a href="https://stripe.com" target="_blank">stripe.com</a> → paste the link into the email before sending.</div>
+      </div>
+    </div>
+
+    <!-- SETUP GUIDE -->
+    <div id="panel-setup" class="panel">
+      <div class="topbar"><div><div class="page-title">Setup guide</div><div class="page-sub">Everything you need to get started — all free, in order</div></div></div>
+
+      <div class="notice"><strong>Total cost to set up: £0.</strong> All tools below have free tiers that are sufficient to start. You only spend money when you earn money (Stripe takes 2.9% per transaction).</div>
+
+      <div class="card">
+        <div class="card-title">One-time setup — do these once</div>
+        <div class="setup-steps">
+
+          <div class="step-card">
+            <div class="step-num">1</div>
+            <div>
+              <div class="step-title">Get your Anthropic API key</div>
+              <div class="step-desc">This dashboard uses Claude AI to generate emails and copy. You need a free API key to enable the AI features.</div>
+              <a class="step-link" href="https://console.anthropic.com" target="_blank">→ console.anthropic.com → API Keys → Create Key</a>
+              <div style="margin-top:8px;font-size:12px;color:var(--text2);">Once you have the key, paste it into the box below and save this file.</div>
+              <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <input type="text" id="api-key-input" placeholder="sk-ant-api..." style="max-width:320px;font-family:'DM Mono',monospace;font-size:12px;" />
+                <button class="btn btn-primary btn-sm" onclick="saveApiKey()">Save key</button>
+                <span id="api-key-status" style="font-size:12px;color:var(--accent);display:none;">Saved!</span>
+              </div>
+              <span class="step-tag free">Free tier available</span>
+            </div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-num">2</div>
+            <div>
+              <div class="step-title">Create a free Stripe account</div>
+              <div class="step-desc">You'll use Stripe to send payment links and collect money from clients. No monthly fee — they take 2.9% only when you get paid.</div>
+              <a class="step-link" href="https://stripe.com" target="_blank">→ stripe.com → Create account (free)</a>
+              <div style="margin-top:6px;font-size:12px;color:var(--text2);">After setup: Dashboard → Payment Links → Create Link → set amount → copy link → paste into invoice email.</div>
+              <span class="step-tag free">Free</span> <span class="step-tag five-min">~10 mins</span>
+            </div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-num">3</div>
+            <div>
+              <div class="step-title">Create a free Carrd account</div>
+              <div class="step-desc">Carrd is where you'll actually build each client website. Free plan lets you publish sites. Pick a clean business template and reuse it for each client.</div>
+              <a class="step-link" href="https://carrd.co" target="_blank">→ carrd.co → Sign up free → browse Business templates</a>
+              <div style="margin-top:6px;font-size:12px;color:var(--text2);">Optional upgrade: Carrd Pro ($19/yr) lets you use custom domains — worth it once you have your first paying client.</div>
+              <span class="step-tag free">Free to start</span> <span class="step-tag five-min">~5 mins</span>
+            </div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-num">4</div>
+            <div>
+              <div class="step-title">Set up a Google Form for client onboarding</div>
+              <div class="step-desc">When a lead replies to your email, you send them this form. Their answers go straight into the Copy Generator tab.</div>
+              <a class="step-link" href="https://forms.google.com" target="_blank">→ forms.google.com → Blank form → add these questions:</a>
+              <div style="margin-top:8px;font-size:12px;color:var(--text2);line-height:2;">
+                1. Business name &amp; tagline<br/>
+                2. Services you offer<br/>
+                3. Phone number &amp; email address<br/>
+                4. Brand colours (or colours you like)<br/>
+                5. Do you have a logo? (file upload)<br/>
+                6. Photos of your work (file upload)<br/>
+                7. What makes you different from competitors?<br/>
+                8. Google Maps listing URL (if you have one)<br/>
+                9. Domain name (if you have one)<br/>
+                10. Anything else you want on the site?
+              </div>
+              <span class="step-tag free">Free</span> <span class="step-tag five-min">~15 mins</span>
+            </div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-num">5</div>
+            <div>
+              <div class="step-title">Bookmark this dashboard</div>
+              <div class="step-desc">Save this file to your desktop or bookmark it in your browser. Open it every morning. It runs entirely in your browser — no internet required for the dashboard itself (only for AI features).</div>
+              <div style="margin-top:6px;font-size:12px;color:var(--text2);">File location: wherever you saved <code>agency-dashboard.html</code> — double-click to open in Chrome.</div>
+              <span class="step-tag five-min">2 mins</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <div class="card-title">Your daily workflow (once set up)</div>
+        <div class="setup-steps">
+          <div class="step-card">
+            <div class="step-num" style="background:var(--surface2);color:var(--text2);">A</div>
+            <div>
+              <div class="step-title">Morning: find 10 leads (~20 mins)</div>
+              <div class="step-desc">Go to Find Leads tab → enter niche + city → follow the plan. Search Google Maps for businesses with no website. Note their name, type, city, and email in a Google Sheet. Add them to the Pipeline here.</div>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num" style="background:var(--surface2);color:var(--text2);">B</div>
+            <div>
+              <div class="step-title">Send cold emails from Gmail (~20 mins for 10 emails)</div>
+              <div class="step-desc">Go to Outreach Emails tab → fill in details → copy Email 1 → paste into Gmail → send. Do this for each lead. Set a reminder to send Email 2 in 3 days if no reply.</div>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num" style="background:var(--surface2);color:var(--text2);">C</div>
+            <div>
+              <div class="step-title">When someone replies → send them your Google Form</div>
+              <div class="step-desc">Reply saying: "Great! To get started, please fill in this quick form and I'll get working on your site: [your Google Form link]". Advance them to Qualified in the pipeline.</div>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num" style="background:var(--surface2);color:var(--text2);">D</div>
+            <div>
+              <div class="step-title">Build the site (~90–120 mins)</div>
+              <div class="step-desc">Copy their form answers → paste into Generate Copy tab → get full homepage copy. Open Carrd → duplicate your template → paste the copy in → add their logo/photos → publish. Advance them to Building, then Client Review.</div>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num" style="background:var(--surface2);color:var(--text2);">E</div>
+            <div>
+              <div class="step-title">Send preview → get approval → invoice (~10 mins)</div>
+              <div class="step-desc">Send them the Carrd preview link. When they approve, go to Invoice Email tab → generate email → create Stripe payment link → send both. Mark as paid when Stripe notifies you.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <div class="card-title">Hosting this dashboard online (optional — free)</div>
+        <div class="step-desc" style="font-size:13px;line-height:1.8;color:var(--text2);">
+          To access this dashboard from any device (phone, other computer), host it free on GitHub Pages:<br/><br/>
+          1. Create a free account at <a href="https://github.com" target="_blank">github.com</a><br/>
+          2. Click <strong>New repository</strong> → name it <code>agency-dashboard</code> → set to Public<br/>
+          3. Upload <code>agency-dashboard.html</code> → rename it to <code>index.html</code><br/>
+          4. Go to Settings → Pages → Source: main branch → Save<br/>
+          5. Your live URL will be: <code>https://yourusername.github.io/agency-dashboard</code><br/><br/>
+          <strong>Note:</strong> your API key is stored in your browser's localStorage — it won't be visible in the public GitHub file.
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ADD LEAD MODAL -->
+<div class="modal-overlay" id="add-lead-modal">
+  <div class="modal">
+    <div class="modal-title">Add new lead</div>
+    <div class="form-group"><label class="form-label">Business name</label><input type="text" id="new-name" placeholder="e.g. Dave's Plumbing" /></div>
+    <div class="grid2">
+      <div class="form-group"><label class="form-label">Business type</label><input type="text" id="new-type" placeholder="e.g. plumber" /></div>
+      <div class="form-group"><label class="form-label">City</label><input type="text" id="new-city" placeholder="e.g. Manchester" /></div>
+    </div>
+    <div class="grid2">
+      <div class="form-group"><label class="form-label">Value (£)</label><input type="text" id="new-value" placeholder="299" /></div>
+      <div class="form-group"><label class="form-label">Stage</label>
+        <select id="new-stage"><option value="new">New lead</option><option value="qualified">Qualified</option><option value="building">Building</option><option value="review">Client review</option><option value="completed">Completed</option></select>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNewLead()">Add lead</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STAGES = ['new','qualified','building','review','completed'];
+const STAGE_LABELS = {new:'New lead',qualified:'Qualified',building:'Building',review:'Client review',completed:'Completed'};
+
+let leads = JSON.parse(localStorage.getItem('wag_leads') || 'null') || [
+  {id:1,name:"Dave's Plumbing",type:"Plumber",city:"Manchester",stage:"qualified",value:299,paid:true},
+  {id:2,name:"Glam Nails Studio",type:"Nail salon",city:"Leeds",stage:"building",value:299,paid:false},
+  {id:3,name:"PT Mike Fitness",type:"Personal trainer",city:"Bristol",stage:"new",value:299,paid:false}
+];
+
+let apiKey = localStorage.getItem('wag_api_key') || '';
+
+function saveLeads() { localStorage.setItem('wag_leads',JSON.stringify(leads)); }
+
+function showPanel(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+  if (id === 'pipeline') { renderMetrics(); renderPipeline(); }
+  if (id === 'tracker') renderTracker();
+  if (id === 'revenue') renderRevenue();
+  if (id === 'setup') { const k = document.getElementById('api-key-input'); if(k && apiKey) k.value = apiKey; }
+}
+
+function saveApiKey() {
+  const val = document.getElementById('api-key-input').value.trim();
+  if (!val) return;
+  apiKey = val;
+  localStorage.setItem('wag_api_key', apiKey);
+  const s = document.getElementById('api-key-status');
+  s.style.display = 'inline';
+  setTimeout(() => s.style.display = 'none', 2000);
+}
+
+function renderMetrics() {
+  const bar = document.getElementById('metrics-bar');
+  const rev = leads.filter(l=>l.paid).reduce((a,l)=>a+l.value,0);
+  const pending = leads.filter(l=>!l.paid).reduce((a,l)=>a+l.value,0);
+  bar.innerHTML = `
+    <div class="metric"><div class="metric-label">Total leads</div><div class="metric-val">${leads.length}</div><div class="metric-sub">in pipeline</div></div>
+    <div class="metric"><div class="metric-label">In progress</div><div class="metric-val">${leads.filter(l=>l.stage==='building').length}</div><div class="metric-sub">building now</div></div>
+    <div class="metric"><div class="metric-label">Revenue received</div><div class="metric-val">£${rev}</div><div class="metric-sub">£${pending} pending</div></div>
+    <div class="metric"><div class="metric-label">Completed</div><div class="metric-val">${leads.filter(l=>l.stage==='completed').length}</div><div class="metric-sub">sites delivered</div></div>
+  `;
+}
+
+function renderPipeline() {
+  const board = document.getElementById('pipeline-board');
+  board.innerHTML = '';
+  STAGES.forEach(s => {
+    const sLeads = leads.filter(l => l.stage === s);
+    const col = document.createElement('div');
+    col.className = 'p-col';
+    col.innerHTML = `<div class="p-header"><span>${STAGE_LABELS[s]}</span><span>${sLeads.length}</span></div>`;
+    sLeads.forEach(lead => {
+      const c = document.createElement('div');
+      c.className = 'p-card';
+      c.innerHTML = `<div class="p-card-name">${lead.name}</div><div class="p-card-meta">${lead.type} · ${lead.city}</div><div class="p-card-meta" style="margin-top:3px;">£${lead.value} · <span style="color:${lead.paid?'var(--green)':'var(--red)'}">${lead.paid?'Paid':'Unpaid'}</span></div>`;
+      c.onclick = () => { if(confirm('Advance "'+lead.name+'" to next stage?')) { advanceLead(lead.id); } };
+      col.appendChild(c);
+    });
+    board.appendChild(col);
+  });
+}
+
+function advanceLead(id) {
+  const lead = leads.find(l => l.id === id);
+  const idx = STAGES.indexOf(lead.stage);
+  if (idx < STAGES.length - 1) { lead.stage = STAGES[idx + 1]; saveLeads(); renderPipeline(); renderMetrics(); }
+}
+
+function renderTracker() {
+  const el = document.getElementById('tracker-content');
+  el.innerHTML = '<div class="card-title">All clients</div>';
+  if (!leads.length) { el.innerHTML += '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">No clients yet — add leads from the Pipeline tab.</div>'; return; }
+  leads.forEach(lead => {
+    const prog = Math.round((STAGES.indexOf(lead.stage) / (STAGES.length-1)) * 100);
+    el.innerHTML += `<div class="tracker-row">
+      <div style="min-width:160px;">
+        <div style="font-size:13px;font-weight:500;">${lead.name}</div>
+        <div style="font-size:11px;color:var(--text3);">${lead.type} · ${lead.city}</div>
+      </div>
+      <span class="badge b-${lead.stage}">${STAGE_LABELS[lead.stage]}</span>
+      <span class="badge b-${lead.paid?'paid':'unpaid'}">${lead.paid?'Paid':'Unpaid'}</span>
+      <div style="flex:1;min-width:100px;">
+        <div class="progress-bar"><div class="progress-fill" style="width:${prog}%"></div></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;">${prog}% complete</div>
+      </div>
+      <div style="font-size:13px;font-weight:500;">£${lead.value}</div>
+      <button class="btn btn-sm" onclick="togglePaid(${lead.id})">${lead.paid?'Mark unpaid':'Mark paid'}</button>
+      <button class="btn btn-sm" onclick="if(confirm('Remove this client?')){removeLead(${lead.id})}">Remove</button>
+    </div>`;
+  });
+}
+
+function togglePaid(id) {
+  const l = leads.find(l=>l.id===id);
+  l.paid = !l.paid;
+  saveLeads();
+  renderTracker();
+  renderMetrics();
+}
+
+function removeLead(id) {
+  leads = leads.filter(l=>l.id!==id);
+  saveLeads();
+  renderTracker();
+  renderPipeline();
+  renderMetrics();
+}
+
+function renderRevenue() {
+  const el = document.getElementById('revenue-content');
+  const recv = leads.filter(l=>l.paid).reduce((a,l)=>a+l.value,0);
+  const pend = leads.filter(l=>!l.paid).reduce((a,l)=>a+l.value,0);
+  el.innerHTML = '<div class="card-title">Revenue breakdown</div>';
+  leads.forEach(l => {
+    el.innerHTML += `<div class="rev-row"><span style="font-weight:500;">${l.name}</span><span style="color:var(--text3);font-size:12px;">${l.type} · ${STAGE_LABELS[l.stage]}</span><span class="${l.paid?'':'rev-pending'}" style="font-weight:500;">£${l.value} ${l.paid?'':'(pending)'}</span></div>`;
+  });
+  el.innerHTML += `<div class="divider"></div><div class="rev-row"><span class="rev-total">Received</span><span></span><span class="rev-total" style="color:var(--accent);">£${recv}</span></div><div class="rev-row"><span class="rev-total">Pending</span><span></span><span class="rev-total" style="color:var(--text2);">£${pend}</span></div><div class="rev-row"><span class="rev-total">Total pipeline</span><span></span><span class="rev-total">£${recv+pend}</span></div>`;
+}
+
+function openAddLead() { document.getElementById('add-lead-modal').classList.add('open'); }
+function closeModal() { document.getElementById('add-lead-modal').classList.remove('open'); }
+function saveNewLead() {
+  const name = document.getElementById('new-name').value.trim();
+  if (!name) return alert('Please enter a business name.');
+  leads.push({
+    id: Date.now(),
+    name,
+    type: document.getElementById('new-type').value || 'Business',
+    city: document.getElementById('new-city').value || 'UK',
+    stage: document.getElementById('new-stage').value,
+    value: parseInt(document.getElementById('new-value').value) || 299,
+    paid: false
+  });
+  saveLeads();
+  closeModal();
+  renderPipeline();
+  renderMetrics();
+  ['new-name','new-type','new-city','new-value'].forEach(id => document.getElementById(id).value = '');
+}
+
+async function callClaude(prompt, outputEl, loadingMsg) {
+  if (!apiKey) {
+    outputEl.classList.remove('loading');
+    outputEl.textContent = 'No API key found. Go to Setup tab → Step 1 → paste your Anthropic API key.';
+    return;
+  }
+  outputEl.textContent = loadingMsg;
+  outputEl.classList.add('loading');
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    outputEl.classList.remove('loading');
+    if (data.error) { outputEl.textContent = 'API error: ' + data.error.message; return; }
+    outputEl.textContent = data.content?.map(b=>b.text||'').join('') || 'No response.';
+  } catch(e) {
+    outputEl.classList.remove('loading');
+    outputEl.textContent = 'Error: ' + e.message;
+  }
+}
+
+function updateMapButtons() {
+  const niche = document.getElementById('leads-niche').value.trim();
+  const city = document.getElementById('leads-city').value.trim();
+  const container = document.getElementById('map-buttons');
+  if (!niche || !city) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--text3);font-style:italic;">Enter a niche and city above to generate search buttons.</div>';
+    return;
+  }
+  const searches = [
+    niche + ' ' + city,
+    niche + ' near ' + city,
+    'best ' + niche + ' ' + city,
+    niche + ' ' + city + ' reviews',
+    'cheap ' + niche + ' ' + city,
+    'local ' + niche + ' ' + city,
+  ];
+  container.innerHTML = searches.map(q => {
+    const url = 'https://www.google.com/maps/search/' + encodeURIComponent(q);
+    return `<a href="${url}" target="_blank" class="btn btn-sm" style="text-decoration:none;">${q} ↗</a>`;
+  }).join('');
+}
+
+function generateMapSearches() {
+  updateMapButtons();
+  const niche = document.getElementById('leads-niche').value.trim();
+  const city = document.getElementById('leads-city').value.trim();
+  if (!niche || !city) return alert('Please enter a niche and city first.');
+}
+
+let todayLeads = [];
+
+function renderTodayLeads() {
+  const el = document.getElementById('today-leads-list');
+  document.getElementById('today-count').textContent = todayLeads.length;
+  if (!todayLeads.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text3);font-style:italic;">No leads captured yet today. Start searching above.</div>'; return; }
+  el.innerHTML = todayLeads.map(l => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+      <div style="flex:1;min-width:120px;"><div style="font-size:13px;font-weight:500;">${l.name}</div><div style="font-size:11px;color:var(--text3);">${l.type} · ${l.city}</div></div>
+      <span style="font-size:11px;color:var(--text2);">${l.issue}</span>
+      <span style="font-size:11px;color:${l.email?'var(--accent)':'var(--text3)'};">${l.email || 'no email yet'}</span>
+      <span class="badge b-new">Added</span>
+    </div>`).join('');
+}
+
+function captureOnly() {
+  const name = document.getElementById('cap-name').value.trim();
+  const type = document.getElementById('cap-type').value.trim() || document.getElementById('leads-niche').value.trim() || 'Business';
+  const city = document.getElementById('cap-city').value.trim() || document.getElementById('leads-city').value.trim() || 'UK';
+  if (!name) return alert('Please enter the business name.');
+  const lead = { id: Date.now(), name, type, city, stage: 'new', value: 299, paid: false };
+  leads.push(lead);
+  saveLeads();
+  const email = document.getElementById('cap-email').value.trim();
+  const issue = document.getElementById('cap-issue').value;
+  todayLeads.push({ name, type, city, email, issue });
+  renderTodayLeads();
+  ['cap-name','cap-email'].forEach(id => document.getElementById(id).value = '');
+  renderMetrics();
+}
+
+async function captureAndDraft() {
+  const name = document.getElementById('cap-name').value.trim();
+  const type = document.getElementById('cap-type').value.trim() || document.getElementById('leads-niche').value.trim() || 'Business';
+  const city = document.getElementById('cap-city').value.trim() || document.getElementById('leads-city').value.trim() || 'UK';
+  const email = document.getElementById('cap-email').value.trim();
+  const issue = document.getElementById('cap-issue').value;
+  if (!name) return alert('Please enter the business name.');
+  const lead = { id: Date.now(), name, type, city, stage: 'new', value: 299, paid: false };
+  leads.push(lead);
+  saveLeads();
+  todayLeads.push({ name, type, city, email, issue });
+  renderTodayLeads();
+  renderMetrics();
+  document.getElementById('cap-email-output').style.display = 'block';
+  document.getElementById('cap-email-actions').style.display = 'none';
+  const outEl = document.getElementById('cap-email-result');
+  await callClaude(`Write a short cold email from a web designer to a small business owner.
+
+Business name: ${name}
+Business type: ${type}
+City: ${city}
+Issue: ${issue}
+Price: £299 flat fee
+Sign-off: [Your Name]
+
+First cold email. Personal, references their specific issue, single CTA to reply if interested. Max 90 words body. Write subject line first, then email body only. Human tone, no jargon, no buzzwords.`, outEl, 'Drafting your cold email...');
+
+  const emailText = outEl.textContent;
+  const subject = emailText.split('\n')[0].replace(/^subject:?\s*/i,'').trim();
+  const body = emailText.split('\n').slice(1).join('\n').trim();
+  const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1${email ? '&to='+encodeURIComponent(email) : ''}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  document.getElementById('open-gmail-btn').onclick = () => window.open(gmailUrl, '_blank');
+  document.getElementById('cap-email-actions').style.display = 'flex';
+  ['cap-name','cap-email'].forEach(id => document.getElementById(id).value = '');
+}
+
+function copyEmail() {
+  const text = document.getElementById('cap-email-result').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('[onclick="copyEmail()"]');
+    const orig = btn.textContent; btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 1500);
+  });
+}
+
+async function findLeads() {
+  const niche = document.getElementById('leads-niche').value.trim();
+  const city = document.getElementById('leads-city').value.trim();
+  if (!niche || !city) return alert('Please enter a niche and city.');
+  document.getElementById('leads-output').style.display = 'block';
+  await callClaude(`You are helping someone build a web design business from scratch with zero budget. They want to find small businesses in ${city} in the niche: "${niche}" that need a website.
+
+Give 5 specific tips:
+1. What to look for on Google Maps listings (red flags that mean they need a website)
+2. How to find their email address quickly (Google, Facebook page, etc.)
+3. What makes a lead "qualified" in this specific niche
+4. The best time of day to send cold emails to this type of business
+5. One thing to mention in the email that's specific to this niche that will get their attention
+
+Be concise, specific, practical. No fluff. Max 200 words total.`, document.getElementById('leads-result'), 'Generating tips...');
+}
+
+async function generateOutreach() {
+  const biz = document.getElementById('out-biz').value.trim();
+  const type = document.getElementById('out-type').value.trim();
+  const city = document.getElementById('out-city').value.trim();
+  const price = document.getElementById('out-price').value || '299';
+  const issue = document.getElementById('out-issue').value || 'no professional website';
+  if (!biz || !type) return alert('Please enter business name and type.');
+  document.getElementById('outreach-output').style.display = 'block';
+  const base = (n, extra) => `Write cold outreach email ${n} for a freelance web designer targeting a small business. Business: ${biz} (${type}, ${city}). Issue: ${issue}. Price: £${price} flat fee. Your sign-off: [Your Name]. ${extra} Write only the email — subject line first, then body. Short, human, no jargon.`;
+  await callClaude(base(1,'First cold email. Personal, references their specific issue, single CTA to reply. Max 90 words body.'), document.getElementById('email1-out'), 'Writing email 1...');
+  await callClaude(base(2,'Follow-up sent 3 days later. No reply yet. Brief, friendly, adds slight urgency. Max 60 words.'), document.getElementById('email2-out'), 'Writing email 2...');
+  await callClaude(base(3,'Final follow-up sent 7 days later. Soft close, leave door open, no pressure. Max 50 words.'), document.getElementById('email3-out'), 'Writing email 3...');
+  const fq = document.getElementById('form-questions');
+  const qs = ['Business name & tagline','Services you offer (list them all)','Phone number & email address','Brand colours (or colours you like)','Do you have a logo? (attach file)','Photos of your work (attach files)','What makes you better than competitors?','Google Maps listing URL','Domain name (if you have one)','Anything else you want on the site?'];
+  fq.innerHTML = qs.map((q,i) => `<div style="padding:4px 0;color:var(--text2);font-size:13px;">${i+1}. ${q}</div>`).join('');
+}
+
+async function generateCopy() {
+  const biz = document.getElementById('copy-biz').value.trim();
+  const type = document.getElementById('copy-type').value.trim();
+  if (!biz || !type) return alert('Please enter business name and type.');
+  document.getElementById('copy-output').style.display = 'block';
+  await callClaude(`Write complete homepage copy for a small business website. Be specific and original — no filler phrases.
+
+Business: ${biz}
+Type & location: ${type}
+Services: ${document.getElementById('copy-services').value || 'general services'}
+Tone: ${document.getElementById('copy-tone').value}
+Target customer: ${document.getElementById('copy-audience').value || 'local customers'}
+USPs: ${document.getElementById('copy-usp').value || 'not specified'}
+
+Write these sections, clearly labelled:
+HEADLINE (max 8 words, punchy)
+SUBHEADLINE (1 benefit-focused sentence)
+INTRO PARAGRAPH (2–3 sentences, warm and human)
+SERVICES (each service with a 1-sentence description)
+WHY CHOOSE US (3 specific bullet points)
+TESTIMONIAL (write one realistic placeholder they can replace)
+CALL TO ACTION (button text + 1 supporting sentence)
+FOOTER TAGLINE (5 words max)
+
+Only output the copy. No commentary.`, document.getElementById('copy-result'), 'Generating your website copy...');
+}
+
+async function generateInvoice() {
+  const name = document.getElementById('inv-name').value.trim();
+  const amount = document.getElementById('inv-amount').value;
+  if (!name || !amount) return alert('Please enter client name and amount.');
+  document.getElementById('invoice-output').style.display = 'block';
+  await callClaude(`Write a short professional invoice/payment request email.
+
+Client: ${name}
+Amount: £${amount}
+Milestone: ${document.getElementById('inv-milestone').value}
+Work completed: ${document.getElementById('inv-work').value || 'website build'}
+Sender: [Your Name]
+
+Include: subject line, brief summary of what was completed, note that a Stripe payment link is attached, polite thank-you. Max 120 words. Professional but warm tone.`, document.getElementById('invoice-result'), 'Writing invoice email...');
+}
+
+function setClock() {
+  const el = document.getElementById('sidebar-clock');
+  if (el) el.textContent = new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}) + ' · ' + new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+}
+setClock();
+setInterval(setClock, 30000);
+renderMetrics();
+renderPipeline();
+</script>
+</body>
+</html>
